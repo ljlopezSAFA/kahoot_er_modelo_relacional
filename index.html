@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiz E/R → Relacional · SAFA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!--
+  ============================================================================
+  QUIZ EN DIRECTO · Del modelo E/R al modelo relacional · Bases de Datos 1º DAW
+  Prof. Luis Javier López López · SAFA Ntra. Sra. de los Reyes
+  ----------------------------------------------------------------------------
+  CÓMO SE USA
+   · Profesor (proyector):  https://TU-USUARIO.github.io/TU-REPO/?profe
+   · Alumnos (móvil):       https://TU-USUARIO.github.io/TU-REPO/
+                            (o escaneando el QR que sale en el proyector)
+   · Ensayo en un solo PC:  añade &local a la URL del profesor y abre la de
+                            alumno con ?local en otras pestañas del mismo navegador.
+  Las preguntas están en la constante PREGUNTAS, un poco más abajo. Para
+  añadir una, copia un bloque { ... } y cambia el texto. "correcta" es el
+  número de la opción buena empezando en 0 (0 = rojo, 1 = azul, 2 = amarillo,
+  3 = verde).
+  ============================================================================
+-->
+<style>
+:root{
+  --azo:#0B3B55; --az:#006491; --ac:#E1EEF5; --fondo:#F4F8FB; --osc:#16232E; --gris:#5E6E79;
+  --c0:#E21B3C; --c1:#1368CE; --c2:#C98A00; --c3:#26890C;
+  --ok:#2E7D52; --mal:#B03A2E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Poppins,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--osc);background:var(--fondo);-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer;border:0}
+input{font-family:inherit}
+.oculto{display:none!important}
+.mono{font-family:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace}
+
+/* ---------------- PROFESOR (proyector) ---------------- */
+#profe{min-height:100vh;display:flex;flex-direction:column}
+.barra{display:flex;align-items:center;gap:18px;padding:14px 32px;background:var(--azo);color:#F4F8FB}
+.barra .tit{font-weight:700;font-size:20px;flex:1}
+.barra .cod{font-size:20px;background:#ffffff1f;border-radius:10px;padding:4px 14px}
+.barra .cod b{font-size:24px;letter-spacing:3px}
+.pantalla{flex:1;display:flex;flex-direction:column;padding:28px 40px 32px;gap:22px}
+.btn{background:var(--az);color:#fff;font-weight:700;font-size:24px;border-radius:14px;padding:14px 34px;box-shadow:0 4px 0 #004766}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #004766}
+.btn.sec{background:#fff;color:var(--az);box-shadow:0 4px 0 #B7D5E6;border:2px solid #B7D5E6}
+.btn:disabled{opacity:.45;cursor:default}
+.acciones{display:flex;gap:16px;justify-content:flex-end;align-items:center}
+.pista{font-size:16px;color:var(--gris)}
+
+/* lobby */
+.lobby{display:grid;grid-template-columns:minmax(380px,1.1fr) 1fr;gap:36px;flex:1}
+.unete{background:#fff;border-radius:22px;padding:32px;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;text-align:center;box-shadow:0 6px 24px #0b3b5514}
+.unete .k{font-size:22px;color:var(--gris)}
+.unete .url{font-size:24px;font-weight:700;color:var(--az);word-break:break-all}
+.unete .codigo{font-size:120px;font-weight:800;letter-spacing:12px;color:var(--azo);line-height:1}
+.unete img{width:250px;height:250px;border-radius:10px;background:#fff}
+.estado-red{font-size:16px;color:var(--gris)}
+.jugadores{background:#fff;border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:16px;box-shadow:0 6px 24px #0b3b5514}
+.jugadores h2{font-size:30px;color:var(--azo);display:flex;justify-content:space-between;align-items:center}
+.jugadores h2 span{background:var(--az);color:#fff;border-radius:999px;font-size:24px;padding:2px 18px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;flex:1;overflow:auto}
+.chip{background:var(--ac);color:var(--azo);font-weight:600;font-size:22px;border-radius:999px;padding:6px 18px;animation:pop .3s}
+.chip.off{opacity:.4;text-decoration:line-through}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* pregunta */
+.cabp{display:flex;align-items:center;gap:18px}
+.cabp .num{font-size:22px;font-weight:700;color:var(--az);flex:1}
+.reloj{width:96px;height:96px;border-radius:50%;background:var(--azo);color:#fff;font-size:42px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.reloj.urg{background:var(--mal)}
+.contador{text-align:center;font-weight:700;color:var(--azo);font-size:20px;line-height:1.1}
+.contador b{display:block;font-size:44px}
+.enunciado{background:#fff;border-radius:20px;padding:24px 30px;font-size:34px;font-weight:700;line-height:1.25;color:var(--azo);box-shadow:0 6px 24px #0b3b5514}
+.er{margin-top:14px;background:var(--fondo);border:2px dashed #B7D5E6;border-radius:14px;padding:12px 18px;font-size:26px;font-weight:600;color:var(--osc);white-space:pre-wrap}
+.opciones{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1}
+.op{border-radius:16px;color:#fff;display:flex;align-items:center;gap:18px;padding:18px 24px;font-size:28px;font-weight:600;line-height:1.25;min-height:110px;position:relative;transition:opacity .3s,transform .3s}
+.op .forma{flex:none;width:46px;height:46px}
+.op.c0{background:var(--c0)}.op.c1{background:var(--c1)}.op.c2{background:var(--c2)}.op.c3{background:var(--c3)}
+.op.apagada{opacity:.28}
+.op.buena{outline:6px solid #fff;box-shadow:0 0 0 10px var(--ok);transform:scale(1.01)}
+.op .cuenta{margin-left:auto;font-size:32px;font-weight:800;background:#00000026;border-radius:12px;padding:4px 14px}
+.op .tick{position:absolute;top:-14px;right:-14px;background:var(--ok);color:#fff;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:28px;border:3px solid #fff}
+.explica{background:#E7F4EC;border-left:8px solid var(--ok);border-radius:0 16px 16px 0;padding:16px 22px;font-size:24px;line-height:1.4}
+.explica b{color:#1E5B3A}
+
+/* ranking */
+.rank{display:flex;flex-direction:column;gap:12px;max-width:1100px;width:100%;margin:0 auto}
+.rank h2{font-size:44px;color:var(--azo);text-align:center;margin-bottom:8px}
+.fila{display:flex;align-items:center;gap:18px;background:#fff;border-radius:16px;padding:14px 24px;font-size:30px;font-weight:700;box-shadow:0 4px 16px #0b3b5512;animation:pop .35s both}
+.fila .pos{width:56px;height:56px;border-radius:50%;background:var(--ac);color:var(--azo);display:flex;align-items:center;justify-content:center}
+.fila .nom{flex:1}
+.fila .delta{font-size:22px;color:var(--ok)}
+.fila .pts{color:var(--az)}
+.podio{display:flex;align-items:flex-end;justify-content:center;gap:24px;margin-top:10px}
+.peldano{width:260px;border-radius:18px 18px 0 0;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 12px;gap:6px;text-align:center;animation:sube .8s both}
+.peldano .med{font-size:56px;line-height:1}
+.peldano .n{font-size:28px;font-weight:800;word-break:break-word}
+.peldano .p{font-size:22px;opacity:.9}
+@keyframes sube{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------------- ALUMNO (móvil) ---------------- */
+#alumno{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.cab-movil{background:var(--azo);color:#F4F8FB;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;font-size:15px;gap:10px}
+.cab-movil b{font-size:16px}
+.cuerpo{flex:1;display:flex;flex-direction:column;padding:18px;gap:14px}
+.tarjeta{background:#fff;border-radius:18px;padding:22px;box-shadow:0 6px 20px #0b3b5514;display:flex;flex-direction:column;gap:14px}
+.tarjeta h1{font-size:26px;color:var(--azo);line-height:1.2}
+.tarjeta p{font-size:16px;color:var(--gris);line-height:1.45}
+label{font-size:15px;font-weight:600;color:var(--azo)}
+.campo{width:100%;font-size:24px;padding:12px 14px;border:2px solid #B7D5E6;border-radius:12px;outline:none}
+.campo:focus{border-color:var(--az)}
+.campo.cod{letter-spacing:8px;text-align:center;font-weight:800}
+.btn-m{width:100%;font-size:22px;padding:16px;border-radius:14px;background:var(--az);color:#fff;font-weight:700;box-shadow:0 4px 0 #004766}
+.btn-m:disabled{opacity:.5}
+.error{color:var(--mal);font-weight:600;font-size:15px;min-height:20px}
+.centro{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:10px}
+.centro .grande{font-size:30px;font-weight:800;color:var(--azo);line-height:1.2}
+.centro .med{font-size:20px;color:var(--gris)}
+.ruedita{width:54px;height:54px;border-radius:50%;border:6px solid var(--ac);border-top-color:var(--az);animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.preg-m{background:#fff;border-radius:14px;padding:14px 16px;font-size:17px;font-weight:600;color:var(--azo);line-height:1.35}
+.preg-m .er{font-size:14px;padding:8px 10px;margin-top:8px}
+.reloj-m{align-self:center;font-weight:800;color:var(--azo);font-size:18px}
+.botones{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1}
+.bm{border-radius:16px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:16px;font-weight:600;line-height:1.25;min-height:120px;box-shadow:0 5px 0 #00000033}
+.bm:active{transform:translateY(3px);box-shadow:0 2px 0 #00000033}
+.bm .forma{width:40px;height:40px}
+.bm.c0{background:var(--c0)}.bm.c1{background:var(--c1)}.bm.c2{background:var(--c2)}.bm.c3{background:var(--c3)}
+.res-ok{background:var(--ok)!important}.res-mal{background:var(--mal)!important}
+.res-ok .centro *, .res-mal .centro *{color:#fff!important}
+.res .grande{font-size:38px}
+.pts-big{font-size:26px;font-weight:800;background:#ffffff2e;border-radius:12px;padding:6px 18px}
+.aviso{position:fixed;inset:auto 12px 12px 12px;background:var(--mal);color:#fff;border-radius:14px;padding:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-weight:600;z-index:9}
+.aviso button{background:#fff;color:var(--mal);border-radius:10px;padding:8px 14px;font-weight:700}
+
+@media (max-width:900px){
+  .lobby{grid-template-columns:1fr}
+  .opciones{grid-template-columns:1fr}
+  .enunciado{font-size:24px}
+  .op{font-size:20px;min-height:70px}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================= VISTA PROFESOR ======================= -->
+<div id="profe" class="oculto">
+  <div class="barra"><div class="tit">Bases de Datos · 1º DAW · Del E/R al modelo relacional</div><div class="cod" id="p-cod">Código: <b>····</b></div></div>
+  <div class="pantalla" id="p-pantalla"></div>
+</div>
+
+<!-- ======================= VISTA ALUMNO ======================= -->
+<div id="alumno" class="oculto">
+  <div class="cab-movil"><span>Quiz E/R → Relacional</span><b id="a-yo"></b></div>
+  <div class="cuerpo" id="a-cuerpo"></div>
+</div>
+<div class="aviso oculto" id="a-aviso"><span>Se ha perdido la conexión</span><button id="a-reconectar">Volver a entrar</button></div>
+
+<script>
+/* =========================================================================
+   PREGUNTAS  ·  correcta: 0 = rojo ▲, 1 = azul ◆, 2 = amarillo ●, 3 = verde ■
+   er: (opcional) el trozo de diagrama E/R que se muestra en un recuadro.
+   Recuerda: la pareja (mín,máx) junto a una entidad indica cuántas
+   ocurrencias de ESA entidad se relacionan con UNA de la otra.
+   ========================================================================= */
+const TIEMPO = 30; // segundos por pregunta (se puede cambiar en cada una con "tiempo")
+const PREGUNTAS = [
+  { texto: "La entidad SOCIO tiene como identificador el dni. ¿Cómo queda su tabla?",
+    opciones: ["id PK y dni UQ", "dni PK y sin id", "id PK y dni sin marcar", "dni como FK"],
+    correcta: 0, explicacion: "Por convención la tabla recibe <b>id</b> como clave primaria; el dni es una clave alternativa y se marca <b>UQ</b>." },
+  { texto: "¿Cómo se llama la clave ajena de socio que apunta a la tabla tarifa?",
+    opciones: ["tarifa_id", "fk_tarifa", "id_tarifa", "tarifa"],
+    correcta: 2, explicacion: "Las claves ajenas se nombran <b>id_ + tabla a la que apuntan</b>: id_tarifa." },
+  { texto: "Relación 1:N. ¿Dónde va la clave ajena?", er: "EQUIPO (1,1) —pertenece— (0,n) JUGADOR",
+    opciones: ["id_jugador en equipo", "id_equipo en jugador", "En una tabla nueva", "No hace falta FK"],
+    correcta: 1, explicacion: "Junto al lado 1 hay (1,1): todo jugador tiene equipo. La FK va a la tabla del <b>lado N</b>: id_equipo en jugador." },
+  { texto: "Ahora hay jugadores sin equipo (agentes libres). ¿Qué hacemos?", er: "EQUIPO (0,1) —pertenece— (0,n) JUGADOR",
+    opciones: ["id_equipo en jugador, admitiendo NULL", "id_jugador en equipo", "Tabla equipo_jugador con PK id_jugador", "Tabla con PK (id_equipo, id_jugador)"],
+    correcta: 2, explicacion: "Con (0,1) junto al lado 1 la FK quedaría a NULL. Se crea <b>tabla nueva</b> y su PK es <b>solo la clave del lado N</b> (id_jugador)." },
+  { texto: "¿Cuál es la regla de oro del paso a tablas?",
+    opciones: ["Toda tabla tiene una FK", "Ninguna FK puede quedar a NULL", "Las FK siempre son únicas", "Cada relación genera una tabla"],
+    correcta: 1, explicacion: "<b>Ninguna clave ajena puede quedar a NULL.</b> Si podría quedar vacía, se crea una tabla para la relación." },
+  { texto: "Relación N:M. ¿Cuál es la clave primaria de socio_clase?", er: "SOCIO (0,n) —se_apunta— (0,n) CLASE",
+    opciones: ["id_socio", "id_clase", "(id_socio, id_clase) compuesta", "fecha_inscripcion"],
+    correcta: 2, explicacion: "Las N:M siempre generan tabla y su PK está <b>compuesta por las dos FK</b>: una PK de dos campos, no dos PK." },
+  { texto: "La relación se_apunta (N:M) tiene el atributo fecha_inscripcion. ¿Dónde va?",
+    opciones: ["En socio", "En clase", "En socio y en clase", "En socio_clase"],
+    correcta: 3, explicacion: "Los atributos de la relación viajan con ella: van a la <b>tabla de la relación</b>, porque dependen del socio y de la clase a la vez." },
+  { texto: "Una N:M donde una de las partes tiene mínimo 0, ¿genera tabla?", er: "ALUMNO (0,n) —cursa— (1,n) MODULO",
+    opciones: ["Sí, siempre", "No, FK en alumno", "No, FK en modulo", "Solo si tiene atributos"],
+    correcta: 0, explicacion: "Las N:M generan tabla <b>con cualquier participación</b>." },
+  { texto: "Relación 1:1. ¿Qué hacemos?", er: "EMPLEADO (1,1) —responsable— (0,1) SALA",
+    opciones: ["id_sala UQ en empleado", "id_empleado UQ en sala", "Tabla nueva empleado_sala", "id_empleado en sala, sin UQ"],
+    correcta: 1, explicacion: "La FK va en la entidad que tiene el <b>(0,1) a su lado</b> (sala): toda sala tiene responsable, nunca queda vacía. Es <b>UQ</b> porque es 1:1." },
+  { texto: "Relación 1:1 con las dos partes opcionales. ¿Qué hacemos?", er: "PERSONA (0,1) —compra— (0,1) COCHE",
+    opciones: ["id_persona UQ en coche", "id_coche UQ en persona", "Tabla persona_coche: PK id_coche, id_persona UQ", "Juntar las dos en una tabla"],
+    correcta: 2, explicacion: "Pongamos la FK donde la pongamos habría NULL: <b>tabla nueva</b>. PK = clave de una entidad y la otra FK, <b>única</b>." },
+  { texto: "Relación 1:1 con las dos partes obligatorias. ¿Qué hacemos?", er: "PRESIDENTE (1,1) —gobierna— (1,1) PAIS",
+    opciones: ["Tabla nueva obligatoria", "FK UQ en cualquiera de las dos", "FK sin UQ en pais", "PK compuesta en pais"],
+    correcta: 1, explicacion: "Ningún lado puede quedar vacío: la FK <b>única</b> puede ir en <b>cualquiera de las dos</b> tablas." },
+  { texto: "¿Por qué la FK de una relación 1:1 se marca UQ?",
+    opciones: ["Para que no sea NULL", "Porque también es PK", "Si se pudiera repetir sería 1:N", "Porque lo exige MariaDB"],
+    correcta: 2, explicacion: "Si el mismo valor pudiera aparecer en varias filas, una ocurrencia se relacionaría con muchas: sería <b>1:N</b>." },
+  { texto: "CLIENTE tiene el atributo multivaluado telefonos. ¿Cómo lo pasas?",
+    opciones: ["Columna telefonos: «612…, 955…»", "Columnas telefono1, telefono2…", "Tabla cliente_telefono (id_cliente, telefono)", "id_telefono en cliente"],
+    correcta: 2, explicacion: "Una celda no puede guardar varios valores: <b>otra tabla</b>, una fila por teléfono. PK = id_cliente + telefono." },
+  { texto: "CLIENTE tiene el atributo compuesto direccion (calle, numero, cp, localidad). ¿Cómo queda?",
+    opciones: ["Una columna direccion", "Columnas calle, numero, cp y localidad", "Una tabla direccion", "direccion y además sus 4 partes"],
+    correcta: 1, explicacion: "El atributo «padre» <b>desaparece</b>: solo pasan sus componentes como columnas." },
+  { texto: "Reflexiva 1:N: los jefes no tienen coordinador. ¿Qué hacemos?", er: "EMPLEADO (0,1) coordinador —coordina— (0,n) coordinado",
+    opciones: ["id_coordinador en empleado, con NULL", "Tabla empleado_coordinador con PK id_empleado", "Tabla con PK (id_empleado, id_coordinador)", "Nada, es la misma tabla"],
+    correcta: 1, explicacion: "Con 0 en el lado 1 la FK quedaría a NULL: tabla <b>obligatoria</b>, PK id_empleado (el coordinado) y FK id_coordinador." },
+  { texto: "Reflexiva 1:N donde todo alumno tiene delegado. ¿Qué hacemos?", er: "ALUMNO (1,1) delegado —es_delegado— (0,n) representado",
+    opciones: ["Tabla alumno_delegado", "id_delegado en la propia tabla alumno", "Tabla delegado aparte", "Nada"],
+    correcta: 1, explicacion: "Nunca queda vacía, así que basta con una FK en la misma tabla que apunta a sí misma: <b>id_delegado</b>." },
+  { texto: "Reflexiva N:M: usuarios que siguen a usuarios. ¿Qué hacemos?", er: "USUARIO (0,n) seguidor —sigue— (0,n) seguido",
+    opciones: ["id_seguidor en usuario", "Tabla usuario_seguidor con PK (id_usuario, id_seguidor)", "Dos tablas usuario", "id_seguidor UQ en usuario"],
+    correcta: 1, explicacion: "Como cualquier N:M: tabla nueva con <b>dos FK a la misma tabla</b> que juntas forman la PK. Una lleva el nombre del rol." },
+  { texto: "RESERVA es una entidad intermedia entre CLIENTE, SALA y EMPLEADO, todas con (1,1). ¿Cómo queda?",
+    opciones: ["Tabla cliente_sala_empleado", "reserva con id, id_cliente, id_sala e id_empleado", "FK en cliente, sala y empleado", "Una relación ternaria"],
+    correcta: 1, explicacion: "Es una entidad más: tabla con su <b>id</b>, y cada 1:N le aporta una FK." },
+  { texto: "¿Qué tipo le pones a la columna telefono?",
+    opciones: ["int", "bigint", "varchar(15)", "decimal(9,0)"],
+    correcta: 2, explicacion: "Teléfono, DNI y CP son <b>texto</b>: no se opera con ellos y pueden llevar ceros, letras o «+34»." },
+  { texto: "¿Y a la columna precio?",
+    opciones: ["double", "decimal(8,2)", "int", "varchar(10)"],
+    correcta: 1, explicacion: "El dinero va en <b>decimal</b>: double es aproximado y pierde céntimos." },
+  { texto: "Quieres saber la edad de cada socio. ¿Qué guardas?",
+    opciones: ["edad int", "fecha_nac date", "edad y fecha_nac", "edad varchar(3)"],
+    correcta: 1, explicacion: "La edad cambia cada año: se guarda <b>fecha_nac</b> y la edad se calcula." },
+  { texto: "Las claves ajenas, ¿aparecen en el diagrama E/R?",
+    opciones: ["Sí, como atributos", "Sí, subrayadas", "No, surgen al pasar a tablas", "Solo en las N:M"],
+    correcta: 2, explicacion: "Las FK <b>no aparecen en el E/R</b>: nacen al transformar las relaciones en tablas." },
+];
+
+/* =========================================================================
+   RED: PeerJS (móviles reales) o BroadcastChannel (?local, pestañas del mismo PC)
+   ========================================================================= */
+const params = new URLSearchParams(location.search);
+const ES_PROFE = params.has("profe");
+const LOCAL = params.has("local");
+const PREFIJO = "safa-er-rel-";
+const PEER_OPTS = {
+  debug: 1,
+  config: { iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
+      username: "openrelayproject", credential: "openrelayproject" }
+  ] }
+};
+const rid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+function envolverPeer(c) {
+  return {
+    send: (o) => { try { if (c.open) c.send(o); } catch (e) {} },
+    onData: (f) => c.on("data", f),
+    onClose: (f) => { c.on("close", f); c.on("error", f); },
+    close: () => { try { c.close(); } catch (e) {} }
+  };
+}
+
+/* --- canal local (ensayo con varias pestañas) --- */
+function canalLocal(codigo) { return new BroadcastChannel("quiz-er-local-" + codigo); }
+function connLocal(bc, yo, otro) {
+  const datos = [], cierres = [];
+  const conn = {
+    send: (o) => bc.postMessage({ de: yo, para: otro, tipo: "datos", carga: JSON.parse(JSON.stringify(o)) }),
+    onData: (f) => datos.push(f),
+    onClose: (f) => cierres.push(f),
+    close: () => bc.postMessage({ de: yo, para: otro, tipo: "cierre" }),
+    _datos: (m) => datos.forEach(f => f(m)),
+    _cierre: () => cierres.forEach(f => f())
+  };
+  return conn;
+}
+
+function crearSala(codigo, { alAbrir, alConectar, alError }) {
+  if (LOCAL) {
+    const bc = canalLocal(codigo), conns = new Map();
+    bc.onmessage = ({ data: m }) => {
+      if (m.para !== "host") return;
+      if (m.tipo === "conectar") {
+        const c = connLocal(bc, "host", m.de); conns.set(m.de, c);
+        bc.postMessage({ de: "host", para: m.de, tipo: "aceptado" });
+        alConectar(c);
+      } else if (m.tipo === "datos") conns.get(m.de)?._datos(m.carga);
+      else if (m.tipo === "cierre") { conns.get(m.de)?._cierre(); conns.delete(m.de); }
+    };
+    addEventListener("pagehide", () => conns.forEach(c => c.close()));
+    setTimeout(alAbrir, 50);
+    return;
+  }
+  if (typeof Peer === "undefined") { alError("sin-libreria"); return; }
+  const peer = new Peer(PREFIJO + codigo, PEER_OPTS);
+  peer.on("open", alAbrir);
+  peer.on("connection", (c) => c.on("open", () => alConectar(envolverPeer(c))));
+  peer.on("disconnected", () => { try { peer.reconnect(); } catch (e) {} });
+  peer.on("error", (e) => alError(e.type || "error"));
+}
+
+function unirseASala(codigo, { alAbrir, alCerrar, alError }) {
+  if (LOCAL) {
+    const bc = canalLocal(codigo), yo = rid();
+    const c = connLocal(bc, yo, "host");
+    let ok = false;
+    bc.onmessage = ({ data: m }) => {
+      if (m.para !== yo) return;
+      if (m.tipo === "aceptado") { ok = true; alAbrir(c); }
+      else if (m.tipo === "datos") c._datos(m.carga);
+      else if (m.tipo === "cierre") { c._cierre(); alCerrar(); }
+    };
+    bc.postMessage({ de: yo, para: "host", tipo: "conectar" });
+    addEventListener("pagehide", () => c.close());
+    setTimeout(() => { if (!ok) alError("peer-unavailable"); }, 3000);
+    return;
+  }
+  if (typeof Peer === "undefined") { alError("sin-libreria"); return; }
+  const peer = new Peer(undefined, PEER_OPTS);
+  let abierta = false;
+  const t = setTimeout(() => { if (!abierta) alError("tiempo"); }, 15000);
+  peer.on("open", () => {
+    const c = peer.connect(PREFIJO + codigo, { reliable: true, serialization: "json" });
+    const w = envolverPeer(c);
+    c.on("open", () => { abierta = true; clearTimeout(t); alAbrir(w); });
+    c.on("close", () => { if (abierta) alCerrar(); });
+    c.on("error", () => { if (abierta) alCerrar(); });
+  });
+  peer.on("error", (e) => { clearTimeout(t); if (abierta) alCerrar(); else alError(e.type || "error"); });
+}
+
+/* =========================================================================
+   UTILIDADES DE INTERFAZ
+   ========================================================================= */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const FORMAS = [
+  '<svg class="forma" viewBox="0 0 40 40"><polygon points="20,4 37,34 3,34" fill="#fff"/></svg>',
+  '<svg class="forma" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20" fill="#fff"/></svg>',
+  '<svg class="forma" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#fff"/></svg>',
+  '<svg class="forma" viewBox="0 0 40 40"><rect x="5" y="5" width="30" height="30" fill="#fff"/></svg>'
+];
+const NOMBRE_COLOR = ["rojo", "azul", "amarillo", "verde"];
+const tiempoDe = (q) => (q.tiempo || TIEMPO);
+const puntosPor = (ms, T) => Math.max(500, Math.round(1000 * (1 - (ms / (T * 1000)) / 2)));
+
+/* =========================================================================
+   PROFESOR
+   ========================================================================= */
+function iniciarProfe() {
+  $("#profe").classList.remove("oculto");
+  const S = { estado: "conectando", codigo: "", i: -1, t0: 0, tic: null, jug: new Map(), posPrev: new Map() };
+  const pant = $("#p-pantalla");
+  const jugadores = () => [...S.jug.values()];
+  const conectados = () => jugadores().filter(p => p.conectado);
+  const urlAlumno = () => {
+    const u = new URL(location.href); u.search = "";
+    u.searchParams.set("sala", S.codigo); if (LOCAL) u.searchParams.set("local", "");
+    return u.toString().replace("local=", "local");
+  };
+  const ranking = () => jugadores().slice().sort((a, b) => b.puntos - a.puntos || a.nombre.localeCompare(b.nombre));
+  const posicion = (p) => ranking().indexOf(p) + 1;
+  const pregunta = () => PREGUNTAS[S.i];
+
+  try { navigator.wakeLock?.request("screen").catch(() => {}); } catch (e) {}
+  addEventListener("beforeunload", (e) => { if (S.jug.size) { e.preventDefault(); e.returnValue = ""; } });
+
+  function abrir() {
+    S.codigo = String(Math.floor(1000 + Math.random() * 9000));
+    crearSala(S.codigo, {
+      alAbrir: () => { S.estado = "lobby"; $("#p-cod").innerHTML = "Código: <b>" + S.codigo + "</b>"; pintar(); },
+      alConectar: (conn) => {
+        let p = null;
+        conn.onData((m) => { if (m && typeof m === "object") p = recibir(conn, m, p) || p; });
+        conn.onClose(() => { if (p && p.conn === conn) { p.conectado = false; pintar(); comprobarTodos(); } });
+      },
+      alError: (tipo) => {
+        if (tipo === "unavailable-id") return abrir();
+        pant.innerHTML = `<div class="unete" style="flex:1"><div class="codigo" style="font-size:44px;letter-spacing:0">No se ha podido crear la sala</div>
+          <p class="k">${tipo === "sin-libreria" ? "No se ha cargado la librería de conexión (¿hay Internet en este equipo?)." : "Error de red: " + esc(tipo)}</p>
+          <button class="btn" onclick="location.reload()">Reintentar</button></div>`;
+      }
+    });
+  }
+
+  function recibir(conn, m, p) {
+    if (m.t === "entrar") {
+      const nombre = String(m.nombre || "").trim().slice(0, 16), token = String(m.token || "").slice(0, 40);
+      if (!nombre || !token) return conn.send({ t: "error", msg: "Escribe un nombre." });
+      let yo = S.jug.get(token);
+      if (!yo) {
+        const mismo = jugadores().find(q => q.nombre.toLowerCase() === nombre.toLowerCase());
+        if (mismo && mismo.conectado) return conn.send({ t: "error", msg: "Ese nombre ya está en uso. Prueba con otro." });
+        if (mismo) { S.jug.delete(mismo.token); mismo.token = token; S.jug.set(token, mismo); yo = mismo; }
+      }
+      if (!yo) {
+        if (S.estado === "final") return conn.send({ t: "error", msg: "La partida ya ha terminado." });
+        yo = { token, nombre, puntos: 0, racha: 0, ultimo: 0, resp: null, conn, conectado: true, res: null };
+        S.jug.set(token, yo);
+      }
+      yo.conn = conn; yo.conectado = true;
+      conn.send({ t: "dentro", nombre: yo.nombre, puntos: yo.puntos });
+      sincronizar(yo); pintar();
+      return yo;
+    }
+    if (!p) return;
+    if (m.t === "respuesta" && S.estado === "pregunta" && m.i === S.i && !p.resp) {
+      const op = Number(m.opcion);
+      if (!(op >= 0 && op < pregunta().opciones.length)) return;
+      p.resp = { opcion: op, ms: performance.now() - S.t0 };
+      conn.send({ t: "enviada" });
+      pintarContador(); comprobarTodos();
+    }
+  }
+
+  function msgPregunta() {
+    const q = pregunta(), restante = Math.max(0, tiempoDe(q) * 1000 - (performance.now() - S.t0));
+    return { t: "pregunta", i: S.i, n: PREGUNTAS.length, texto: q.texto, er: q.er || "", opciones: q.opciones, restante };
+  }
+  function sincronizar(p) {
+    if (S.estado === "pregunta") p.conn.send(p.resp ? { t: "enviada" } : msgPregunta());
+    else if ((S.estado === "resultado" || S.estado === "ranking") && p.res) p.conn.send(p.res);
+    else if (S.estado === "final") p.conn.send({ t: "final", posicion: posicion(p), total: S.jug.size, puntos: p.puntos });
+    else p.conn.send({ t: "espera" });
+  }
+  const difundir = (f) => conectados().forEach(p => p.conn.send(typeof f === "function" ? f(p) : f));
+
+  function lanzar() {
+    S.i++;
+    if (S.i >= PREGUNTAS.length) return terminar();
+    S.posPrev = new Map(ranking().map((p, k) => [p.token, k + 1]));
+    jugadores().forEach(p => { p.resp = null; p.res = null; });
+    S.estado = "pregunta"; S.t0 = performance.now();
+    difundir(msgPregunta());
+    pintar();
+    clearInterval(S.tic);
+    S.tic = setInterval(() => {
+      const r = tiempoDe(pregunta()) - (performance.now() - S.t0) / 1000;
+      const el = $("#p-reloj");
+      if (el) { el.textContent = Math.max(0, Math.ceil(r)); el.classList.toggle("urg", r <= 5); }
+      if (r <= 0) corregir();
+    }, 200);
+  }
+  function comprobarTodos() {
+    if (S.estado !== "pregunta") return;
+    const c = conectados();
+    if (c.length && c.every(p => p.resp)) corregir();
+  }
+  function corregir() {
+    if (S.estado !== "pregunta") return;
+    clearInterval(S.tic);
+    const q = pregunta();
+    jugadores().forEach(p => {
+      const acierto = !!p.resp && p.resp.opcion === q.correcta;
+      let pts = 0;
+      if (acierto) { p.racha++; pts = puntosPor(p.resp.ms, tiempoDe(q)) + Math.min(Math.max(p.racha - 1, 0), 5) * 100; }
+      else p.racha = 0;
+      p.ultimo = pts; p.puntos += pts;
+    });
+    S.estado = "resultado";
+    jugadores().forEach(p => {
+      p.res = { t: "resultado", acierto: !!p.resp && p.resp.opcion === q.correcta, respondio: !!p.resp, puntos: p.ultimo,
+                total: p.puntos, posicion: posicion(p), racha: p.racha, correcta: q.opciones[q.correcta], color: q.correcta };
+    });
+    conectados().forEach(p => p.conn.send(p.res));
+    pintar();
+  }
+  function verRanking() { S.estado = "ranking"; pintar(); }
+  function terminar() {
+    clearInterval(S.tic); S.estado = "final";
+    difundir(p => ({ t: "final", posicion: posicion(p), total: S.jug.size, puntos: p.puntos }));
+    pintar();
+  }
+
+  /* ---------- pintado ---------- */
+  function pintarContador() {
+    const el = $("#p-cont"); if (!el) return;
+    el.innerHTML = `<b>${jugadores().filter(p => p.resp).length}</b>respuestas`;
+  }
+  function pintar() {
+    if (S.estado === "lobby") {
+      const url = urlAlumno();
+      const qr = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=10&data=" + encodeURIComponent(url);
+      pant.innerHTML = `<div class="lobby">
+        <div class="unete"><div class="k">Entra desde el móvil en</div><div class="url">${esc(url.replace(/^https?:\/\//, "").split("?")[0])}</div>
+          <div class="k">y escribe el código</div><div class="codigo">${S.codigo}</div>
+          <img src="${qr}" alt="Código QR para entrar" onerror="this.remove()"><div class="estado-red">o escanea el QR · ${PREGUNTAS.length} preguntas${LOCAL ? " · MODO ENSAYO LOCAL" : ""}</div></div>
+        <div class="jugadores"><h2>Jugadores <span>${conectados().length}</span></h2>
+          <div class="chips">${jugadores().map(p => `<div class="chip ${p.conectado ? "" : "off"}">${esc(p.nombre)}</div>`).join("") || '<p class="pista">Esperando a que entren los alumnos…</p>'}</div>
+          <div class="acciones"><span class="pista">Pulsa Intro para empezar</span><button class="btn" id="p-empezar" ${conectados().length ? "" : "disabled"}>Empezar</button></div></div></div>`;
+      $("#p-empezar").onclick = lanzar;
+      return;
+    }
+    if (S.estado === "pregunta" || S.estado === "resultado") {
+      const q = pregunta(), rev = S.estado === "resultado";
+      const cuentas = q.opciones.map((_, k) => jugadores().filter(p => p.resp && p.resp.opcion === k).length);
+      pant.innerHTML = `<div class="cabp"><div class="num">Pregunta ${S.i + 1} de ${PREGUNTAS.length}</div>
+          ${rev ? "" : `<div class="contador" id="p-cont"></div><div class="reloj" id="p-reloj">${tiempoDe(q)}</div>`}
+          ${rev ? '<button class="btn" id="p-sig">Clasificación →</button>' : '<button class="btn sec" id="p-saltar">Cerrar pregunta</button>'}</div>
+        <div class="enunciado">${esc(q.texto)}${q.er ? `<div class="er mono">${esc(q.er)}</div>` : ""}</div>
+        <div class="opciones">${q.opciones.map((o, k) => `<div class="op c${k} ${rev ? (k === q.correcta ? "buena" : "apagada") : ""}">${FORMAS[k]}<span>${esc(o)}</span>
+          ${rev ? `<span class="cuenta">${cuentas[k]}</span>${k === q.correcta ? '<span class="tick">✓</span>' : ""}` : ""}</div>`).join("")}</div>
+        ${rev && q.explicacion ? `<div class="explica"><b>Por qué:</b> ${q.explicacion}</div>` : ""}`;
+      if (rev) $("#p-sig").onclick = verRanking; else { $("#p-saltar").onclick = corregir; pintarContador(); }
+      return;
+    }
+    if (S.estado === "ranking") {
+      const ult = S.i + 1 >= PREGUNTAS.length;
+      const top = ranking().slice(0, 5);
+      pant.innerHTML = `<div class="rank"><h2>Clasificación</h2>
+        ${top.map((p, k) => { const antes = S.posPrev.get(p.token), sube = antes && antes > k + 1;
+          return `<div class="fila" style="animation-delay:${k * 0.08}s"><div class="pos">${k + 1}</div><div class="nom">${esc(p.nombre)} ${sube ? "▲" : ""}</div>
+          ${p.ultimo ? `<div class="delta">+${p.ultimo}</div>` : ""}<div class="pts">${p.puntos}</div></div>`; }).join("") || '<p class="pista">Sin jugadores</p>'}
+        <div class="acciones" style="margin-top:12px"><button class="btn" id="p-sig">${ult ? "Ver podio 🏆" : "Siguiente pregunta →"}</button></div></div>`;
+      $("#p-sig").onclick = lanzar;
+      return;
+    }
+    if (S.estado === "final") {
+      const r = ranking(), col = ["#C9A227", "#9AA5AE", "#B0703C"], alt = [300, 230, 180], orden = [1, 0, 2];
+      pant.innerHTML = `<div class="rank"><h2>¡Enhorabuena!</h2>
+        <div class="podio">${orden.filter(k => r[k]).map(k => `<div class="peldano" style="background:${col[k]};height:${alt[k]}px;animation-delay:${(2 - k) * 0.4}s">
+          <div class="med">${["🥇", "🥈", "🥉"][k]}</div><div class="n">${esc(r[k].nombre)}</div><div class="p">${r[k].puntos} puntos</div></div>`).join("")}</div>
+        ${r.slice(3, 10).map((p, k) => `<div class="fila" style="font-size:24px"><div class="pos">${k + 4}</div><div class="nom">${esc(p.nombre)}</div><div class="pts">${p.puntos}</div></div>`).join("")}
+        <div class="acciones" style="margin-top:12px"><button class="btn sec" onclick="location.reload()">Nueva partida</button></div></div>`;
+    }
+  }
+
+  addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const b = $("#p-empezar") || $("#p-sig");
+    if (b && !b.disabled) { e.preventDefault(); b.click(); }
+  });
+  pant.innerHTML = '<div class="unete" style="flex:1"><div class="ruedita"></div><div class="k">Creando la sala…</div></div>';
+  abrir();
+}
+
+/* =========================================================================
+   ALUMNO
+   ========================================================================= */
+function iniciarAlumno() {
+  $("#alumno").classList.remove("oculto");
+  const cuerpo = $("#a-cuerpo"), app = $("#alumno");
+  let conn = null, nombre = "", codigo = params.get("sala") || "", tic = null, iActual = -1;
+  let token = null;
+  try { token = sessionStorage.getItem("quizER-token"); } catch (e) {}
+  if (!token) { token = rid(); try { sessionStorage.setItem("quizER-token", token); } catch (e) {} }
+  try { nombre = localStorage.getItem("quizER-nombre") || ""; } catch (e) {}
+
+  const fondo = (cls) => { app.classList.remove("res-ok", "res-mal"); if (cls) app.classList.add(cls); };
+  const pantallaCentro = (html) => { fondo(null); clearInterval(tic); cuerpo.innerHTML = `<div class="centro">${html}</div>`; };
+
+  function formulario(err) {
+    fondo(null); clearInterval(tic);
+    cuerpo.innerHTML = `<div class="tarjeta"><h1>Únete a la partida</h1><p>Escribe el código que aparece en el proyector y tu nombre.</p>
+      <label for="a-cod">Código de la sala</label><input id="a-cod" class="campo cod" inputmode="numeric" maxlength="4" value="${esc(codigo)}" autocomplete="off">
+      <label for="a-nom">Tu nombre</label><input id="a-nom" class="campo" maxlength="16" value="${esc(nombre)}" autocomplete="off" placeholder="Nombre y apellido">
+      <div class="error" id="a-err">${err ? esc(err) : ""}</div><button class="btn-m" id="a-entrar">Entrar</button></div>`;
+    $("#a-entrar").onclick = () => {
+      codigo = $("#a-cod").value.replace(/\D/g, ""); nombre = $("#a-nom").value.trim();
+      if (codigo.length !== 4) return ($("#a-err").textContent = "El código tiene 4 cifras.");
+      if (!nombre) return ($("#a-err").textContent = "Escribe tu nombre.");
+      try { localStorage.setItem("quizER-nombre", nombre); } catch (e) {}
+      conectar();
+    };
+    $(codigo ? "#a-nom" : "#a-cod").focus();
+  }
+
+  function conectar() {
+    $("#a-aviso").classList.add("oculto");
+    pantallaCentro('<div class="ruedita"></div><div class="med">Conectando con la sala…</div>');
+    unirseASala(codigo, {
+      alAbrir: (c) => { conn = c; c.onData(recibir); c.send({ t: "entrar", nombre, token }); },
+      alCerrar: () => { conn = null; $("#a-aviso").classList.remove("oculto"); },
+      alError: (tipo) => formulario(tipo === "peer-unavailable" ? "No existe ninguna sala con ese código." :
+        tipo === "sin-libreria" ? "No se ha podido cargar la conexión. Revisa tu Internet." : "No se ha podido conectar. Inténtalo de nuevo.")
+    });
+  }
+
+  function recibir(m) {
+    if (!m || typeof m !== "object") return;
+    if (m.t === "error") { conn?.close(); conn = null; return formulario(m.msg); }
+    if (m.t === "dentro") { $("#a-yo").textContent = m.nombre; nombre = m.nombre; return; }
+    if (m.t === "espera") return pantallaCentro(`<div class="grande">¡Ya estás dentro!</div><div class="med">Busca tu nombre en el proyector.<br>La partida empieza enseguida.</div><div class="ruedita"></div>`);
+    if (m.t === "pregunta") return pintarPregunta(m);
+    if (m.t === "enviada") return pantallaCentro(`<div class="ruedita"></div><div class="grande">Respuesta enviada</div><div class="med">Espera a que termine el tiempo…</div>`);
+    if (m.t === "resultado") {
+      clearInterval(tic);
+      fondo(m.acierto ? "res-ok" : "res-mal");
+      cuerpo.innerHTML = `<div class="centro res"><div class="grande">${m.acierto ? "¡Correcto!" : m.respondio ? "Incorrecto" : "¡Se acabó el tiempo!"}</div>
+        ${m.acierto ? `<div class="pts-big">+${m.puntos}</div>${m.racha > 1 ? `<div class="med">🔥 Racha de ${m.racha}</div>` : ""}` : `<div class="med">La buena era: <b>${esc(m.correcta)}</b></div>`}
+        <div class="med">Vas el <b>${m.posicion}º</b> · ${m.total} puntos</div></div>`;
+      return;
+    }
+    if (m.t === "final") {
+      const med = ["🥇", "🥈", "🥉"][m.posicion - 1] || "🎉";
+      return pantallaCentro(`<div style="font-size:72px">${med}</div><div class="grande">Has quedado ${m.posicion}º de ${m.total}</div><div class="med">${m.puntos} puntos · ¡Gracias por jugar!</div>`);
+    }
+  }
+
+  function pintarPregunta(m) {
+    fondo(null); iActual = m.i;
+    cuerpo.innerHTML = `<div class="reloj-m">Pregunta ${m.i + 1}/${m.n} · <span id="a-reloj"></span></div>
+      <div class="preg-m">${esc(m.texto)}${m.er ? `<div class="er mono">${esc(m.er)}</div>` : ""}</div>
+      <div class="botones">${m.opciones.map((o, k) => `<button class="bm c${k}" data-k="${k}" aria-label="${NOMBRE_COLOR[k]}: ${esc(o)}">${FORMAS[k]}<span>${esc(o)}</span></button>`).join("")}</div>`;
+    cuerpo.querySelectorAll(".bm").forEach(b => b.onclick = () => {
+      if (!conn) return;
+      cuerpo.querySelectorAll(".bm").forEach(x => x.disabled = true);
+      conn.send({ t: "respuesta", i: iActual, opcion: Number(b.dataset.k) });
+    });
+    const fin = Date.now() + m.restante;
+    clearInterval(tic);
+    const act = () => { const r = Math.max(0, Math.ceil((fin - Date.now()) / 1000)); const el = $("#a-reloj"); if (el) el.textContent = r + " s"; };
+    act(); tic = setInterval(act, 250);
+  }
+
+  $("#a-reconectar").onclick = () => { if (codigo && nombre) conectar(); else formulario(); };
+  formulario();
+}
+
+ES_PROFE ? iniciarProfe() : iniciarAlumno();
+</script>
+</body>
+</html>
